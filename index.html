@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>タイピングゲームアプリ@jQuery</title>
+
+</head>
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    html {
+        font-size: 100%;
+    }
+
+    body {
+        font-size: 3rem;
+        text-align: center;
+    }
+
+    #count {
+        margin: 0;
+        font-weight: bold;
+        color: #888;
+    }
+
+    #wrap {
+        margin-top: 20px;
+        padding: 20px 10px;
+        background-color: #666;
+        font-weight: bold;
+        color: #fff;
+    }
+
+    span {
+        /* 300ms(0.3秒)の時間を掛けて文字サイズ・色を変化させる */
+        transition: all 300ms 0s ease;
+    }
+
+    .add-color {
+        font-size: 0.5rem;
+        color: #666;
+    }
+</style>
+
+<body>
+    <p id="count">60</p>
+    <div id="wrap">
+        <p id="text"></p>
+    </div>
+    <button id="start">スタート</button>
+
+    <script src="jquery-3.6.0.min.js"></script>
+    <script>
+        // HTML要素を先に取得
+        const count = $('#count');
+        const wrap = $('#wrap');
+        const text = $('#text');
+        const start = $('#start');
+
+        // 複数のテキストを格納する配列
+        const textLists = [
+            'Hello world', 'This is my App', 'How are you?', 'Communications', 'Controller',
+            'Today is sunny', 'I love JavaScript!', 'Good morning', 'Bootstrap', 'Request',
+            'I am Japanese', 'Let it be', 'Technology', 'Laravel', 'PHP', 'English', 'component',
+            'Typing game', 'Information', 'I want to be a programmer', 'What day is today?',
+            'I want to build a web app', 'Nice to meet you', 'Ruby', 'Math.floor', 'Service',
+            'machine learning', 'Brendan Eich', 'John Resig', 'Windows', 'Mac', 'Linux', 'iOS', 'Android',
+            'Netscape', 'undefined null NaN', 'React', 'Vue', 'Anglar', 'jQuery', 'composer', 'Provider',
+            'Thank you very much', 'ECMAScript', 'console.log', 'for while if switch', 'Cloud9', 'validate',
+            'var let const', 'programming', 'Chrome', 'Firefox', 'Edge', 'Safari', 'Google', 'Apple', 'Facebook',
+            'Amazon', 'php artisan', 'migration', 'index', 'create', 'store', 'show', 'edit', 'update', 'destroy',
+            'Eloquent',
+        ];
+
+        // 画面に表示するテキスト情報を格納するための空配列を用意する。
+        let checkTexts = [];
+        // スコアの初期値を設定
+        let score = 0;
+
+        // ランダムなテキストを画面に表示する。
+        function createText() {
+            // 新しいテキストが表示される前に#textの中身をリセットする。
+            text.text('');
+            // インデックス数の範囲のランダムな数値を生成
+            const rnd = Math.floor(Math.random() * textLists.length);
+            // テキストを1文字ずつに分解して#textに入れていく。その情報をイベント処理関数内で利用したいのでspan要素をcheckTextに格納する。
+            textLists[rnd].split('').forEach((letter) => {
+                // jquery lesson8,9 appendメソッド
+                text.append(`<span>${letter}</span>`);
+            });
+            // eachメソッド jquery lesson16,28 https://qiita.com/gestalt/items/d7c73643debae06bdd64
+            $('span').each(function () {
+                checkTexts.push($(this));
+            });
+        }
+
+        // ランク判定とメッセージ生成処理
+        function rank(score) {
+            let text = '';
+
+            if(score < 100) {
+                text = `あなたのランクはCです！\nBランクまであと${100 - score}文字です！`;
+            } else if(score < 200) {
+                text = `あなたのランクはBです！\nAランクまであと${200 - score}文字です！`;
+            } else if(score < 300) {
+                text = `あなたのランクはAです！\nSランクまであと${300 - score}文字です！`;
+            } else {
+                text = `あなたのランクはSです!\nおめでとうございます！`;
+            }
+
+            return `${score}文字打てました！\n${text}\n【OK】リトライ【キャンセル】終了`;
+        }
+
+        // ゲームの終了処理
+        function gameOver(id) {
+            clearInterval(id);
+            // OKが押されるとresultはtrueになる。
+            const result = confirm(rank(score));
+            // trueの場合リロードする。
+            if(result) {
+                window.location.reload();
+            }
+        }
+
+        // タイマー処理。開始から終了までの制限時間を実装
+        function timer() {
+            // タイマーの初期値を設定
+            let time = 60;
+            // 1秒ごとに実行する処理を書く。今回はタイマーの値を1つ減らす。
+            const id = setInterval(() => {
+                // タイマーが0になったらタイマーを停止する。clearIntervalの機能に+αしたgameOver関数を使う。
+                if (time <= 0) {
+                    gameOver(id);
+                }
+                count.text(time--);
+            }, 1000);
+        }
+
+        // スタートボタンをクリックして開始
+        start.on('click', (event) => {
+            // タイマー関数を開始する。
+            timer();
+            // スタートボタンを非表示にする。
+            start.hide();
+            // ランダムなテキストを画面に表示
+            createText();
+            // キーボードのイベント処理
+            $(document).on('keydown', (e) => {
+                wrap.css('backgroundColor', '#666');
+                if (e.key === checkTexts[0].text()) {
+                    // add-colorクラスを付与する。 jquery lesson5
+                    checkTexts[0].addClass('add-color');
+                    // 配列から1文字を削除する。
+                    checkTexts.shift();
+                    score++;
+                    // 最後まで入力したら新しいテキストを用意する。
+                    if (!checkTexts.length) {
+                        createText();
+                    }
+                // Shiftキーを押したときは色が変わらない。
+                } else if(e.key === 'Shift') {
+                    wrap.css('backgroundColor', '#666');
+                // タイプミスをした時だけ背景色が変わる。
+                } else {
+                    wrap.css('backgroundColor', '#00CC99');
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
